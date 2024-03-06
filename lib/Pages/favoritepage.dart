@@ -1,4 +1,3 @@
-
 import 'package:cartoonmobile/Pages/detailpage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -126,7 +125,8 @@ class _MyFavoritePageState extends State<MyFavoritePage> {
                           title: storyData['title'],
                           author: storyData['author'],
                           description: storyData['description'],
-                          imageUrl: storyData['imageUrl'], recommendation: '',
+                          imageUrl: storyData['imageUrl'],
+                          recommendation: '',
                         ),
                       ),
                     );

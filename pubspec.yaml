@@ -8,6 +8,7 @@ environment:
   sdk: ">=3.2.2 <4.0.0"
 
 dependencies:
+  async: ^2.11.0
   cached_network_image: ^3.3.0
   card_swiper: ^3.0.1
   carousel_images: ^1.1.2
@@ -53,4 +54,4 @@ flutter:
   uses-material-design: true
 
   assets:
-  - images/
+    - images/

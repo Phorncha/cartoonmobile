@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cartoonmobile/Pages/detailpage.dart';
 
-
 class MyHomePage extends StatefulWidget {
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -21,6 +20,12 @@ class _MyHomePageState extends State<MyHomePage> {
   GlobalKey _buildComedyKey = GlobalKey();
   GlobalKey _buildRomanceKey = GlobalKey();
   GlobalKey _buildHorrorKey = GlobalKey();
+
+  void initState() {
+    super.initState();
+    fetchAndClassifyScores();
+    fetchScores();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
         final scoreRomance = doc['score_romance'] as int?;
 
         print(
-            'A: ${scoreAction ?? 'N/A'}, C: ${scoreComedy ?? 'N/A'}, F: ${scoreFantasy ?? 'N/A'}, H: ${scoreHorror ?? 'N/A'}, R: ${scoreRomance ?? 'N/A'}, ');
+            'A: $scoreAction, C: $scoreComedy, F: $scoreFantasy, H: $scoreHorror, R: $scoreRomance, ');
       }
     } catch (e) {
       print('Error fetching scores from Firestore: $e');
@@ -268,21 +273,21 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildRecommendedStories(BuildContext context) {
     return Container(
       width: 400,
-      height: 338,
-      color: Color.fromARGB(255, 241, 129, 166),
+      height: 330,
+      color: Colors.white,
       margin: EdgeInsets.all(10),
       padding: EdgeInsets.all(20),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  fetchAndClassifyScores();
-                  fetchScores();
-                },
-                child: Text("แนะนำ"),
+           children: [
+              Text(
+                'แนะนำ',
+                style: TextStyle(
+                  color: Colors.pink,
+                  fontSize: 18,
+                ),
               ),
             ],
           ),

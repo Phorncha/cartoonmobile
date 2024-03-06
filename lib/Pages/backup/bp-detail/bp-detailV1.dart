@@ -772,46 +772,14 @@ class _DetailPageState extends State<DetailPage> {
                               ],
                             ),
                             Spacer(),
-                            if (isLocked)
-                              FutureBuilder<bool>(
-                                  future: isEpisodePurchased(_user?.uid ?? '',
-                                      widget.id, episodeIds[entry.key]),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      // หากยังไม่ได้รับข้อมูล
-                                      return SizedBox(); // ส่งกลับวิดเจ็ตว่างเพื่อไม่ให้แสดงอะไร
-                                    } else if (snapshot.hasError) {
-                                      // หากเกิดข้อผิดพลาดในการเรียกข้อมูล
-                                      return SizedBox(); // ส่งกลับวิดเจ็ตว่างเพื่อไม่ให้แสดงอะไร
-                                    } else {
-                                      // ถ้าไม่มีข้อผิดพลาด
-                                      bool isPurchased = snapshot.data ??
-                                          false; // ดึงค่า isPurchased จาก snapshot
-                                      if (!isPurchased) {
-                                        // ถ้าตอนนั้นยังไม่ได้ซื้อ
-                                        return Column(
-                                          children: [
-                                            Text('15',
-                                                style: TextStyle(
-                                                    fontSize: 16)), // แสดงราคา
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  right: 10),
-                                              child: Icon(
-                                                  Icons
-                                                      .monetization_on_outlined,
-                                                  color: Colors
-                                                      .black), // แสดงไอคอนเหรียญ
-                                            ),
-                                          ],
-                                        );
-                                      } else {
-                                        // ถ้าตอนนั้นซื้อแล้ว
-                                        return SizedBox(); // ส่งกลับวิดเจ็ตว่างเพื่อไม่ให้แสดงอะไร
-                                      }
-                                    }
-                                  })
+                            if (isLocked && !isPurchased)
+                              Text('15', style: TextStyle(fontSize: 16)),
+                            if (isLocked && !isPurchased)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: Icon(Icons.monetization_on_outlined,
+                                    color: Colors.black),
+                              ),
                           ],
                         ),
                       ),

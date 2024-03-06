@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:cartoonmobile/Pages/episode.dart';
@@ -34,11 +33,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
     _fetchFriends();
     _purchasedEpisodesData
         .sort((a, b) => int.parse(a['id']).compareTo(int.parse(b['id'])));
-
-    // เรียกใช้งานเมธอด _checkAndDeleteExpiredShares ทุกๆ 1 นาที
-    Timer.periodic(Duration(minutes: 1), (timer) {
-      _checkAndDeleteExpiredShares();
-    });
   }
 
   // ดึงข้อมูลเกี่ยวกับตอนที่ซื้อของผู้ใช้จาก Firestore
@@ -72,7 +66,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
               episodesData.add({
                 'id': key,
                 'title': '$episodeId $key',
-                'timestamp': DateTime.now().millisecondsSinceEpoch,
               });
             });
           } else {
@@ -91,51 +84,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
       }
     } catch (e) {
       print('เกิดข้อผิดพลาดในการดึงข้อมูลตอน: $e');
-    }
-  }
-
-  // เพิ่มเมธอด _checkAndDeleteExpiredShares เพื่อตรวจสอบและลบการแชร์ที่หมดอายุ
-  void _checkAndDeleteExpiredShares() async {
-    try {
-      _user = FirebaseAuth.instance.currentUser;
-
-      if (_user != null) {
-        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(_user!.uid)
-            .collection('share')
-            .get();
-
-        if (querySnapshot.docs.isNotEmpty) {
-          querySnapshot.docs.forEach((doc) async {
-            Map<String, dynamic> shareData = doc.data() as Map<String, dynamic>;
-            shareData.forEach((key, value) async {
-              Map<String, dynamic> episodesData = value['episodes'];
-              episodesData.forEach((episodeId, timestamp) async {
-                int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
-                int shareTimestamp = timestamp;
-
-                // ตรวจสอบว่าหมดอายุหรือไม่ (ให้กำหนดเวลาหมดอายุตามที่ต้องการ)
-                if ((currentTimestamp - shareTimestamp) > 24 * 60 * 60 * 1000) {
-                  // 24 * 60 * 60 * 1000 หมายถึง 1 วัน
-                  // ลบตอนที่มีการแชร์ที่หมดอายุ
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(_user!.uid)
-                      .collection('share')
-                      .doc(doc.id)
-                      .update({
-                    key: FieldValue.delete(),
-                  });
-                  print('ลบการแชร์ที่หมดอายุ: Episode ID: $episodeId');
-                }
-              });
-            });
-          });
-        }
-      }
-    } catch (e) {
-      print('เกิดข้อผิดพลาดในการตรวจสอบและลบการแชร์ที่หมดอายุ: $e');
     }
   }
 
@@ -207,14 +155,14 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
             if (!friendShareData.containsKey(widget.episodeData['id'])) {
               friendShareData[widget.episodeData['id'].toString()] = {
                 'episodes': {
-                  episodeId: DateTime.now().millisecondsSinceEpoch,
+                  episodeId: episodeId,
                 },
               };
             } else {
               if (!friendShareData[widget.episodeData['id']]['episodes']
                   .containsKey(episodeId)) {
                 friendShareData[widget.episodeData['id']]['episodes']
-                    [episodeId] = DateTime.now().millisecondsSinceEpoch;
+                    [episodeId] = episodeId;
               } else {
                 print('Episodes $episodeId already shared with friend.');
               }
@@ -223,7 +171,7 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
             sharedWith[friendEmail] = {
               widget.episodeData['id'].toString(): {
                 'episodes': {
-                  episodeId: DateTime.now().millisecondsSinceEpoch,
+                  episodeId: episodeId,
                 },
               }
             };
@@ -387,12 +335,11 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                             ),
                           ),
                           Expanded(
-                            child: ListTile(
-                              title: Text(
-                                ' ${_purchasedEpisodesData[index]['id']}',
-                              ),
+                              child: ListTile(
+                            title: Text(
+                              ' ${_purchasedEpisodesData[index]['id']}',
                             ),
-                          ),
+                          )),
                           IconButton(
                             icon: Icon(Icons.share),
                             onPressed: () {
@@ -438,13 +385,13 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                                                       icon: Icon(Icons.send),
                                                       onPressed: () {
                                                         // เรียกใช้งานฟังก์ชัน _shareWithFriend
-                                                        _shareWithFriend(
-                                                          showfriend[
-                                                              friendIndex], // ส่งชื่อเพื่อนที่ถูกเลือกไปยังฟังก์ชัน
-                                                          _purchasedEpisodesData[
-                                                                  index][
-                                                              'id'], // ส่ง StoryId ที่เกี่ยวข้องกับตอนที่ซื้อ
-                                                        );
+                                                        // _shareWithFriend(
+                                                        //   showfriend[
+                                                        //       friendIndex], // ส่งชื่อเพื่อนที่ถูกเลือกไปยังฟังก์ชัน
+                                                        //   _purchasedEpisodesData[
+                                                        //           index][
+                                                        //       'id'], // ส่ง StoryId ที่เกี่ยวข้องกับตอนที่ซื้อ
+                                                        // );
                                                         _saveSharedEpisode(
                                                           showfriend[
                                                               friendIndex],
@@ -452,7 +399,7 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                                                               index]['id'],
                                                         );
 
-                                                        // หลังจากเรียกใช้งานฟังก์ชันเสร็จสิ้น คุณสามารถปิดกล่องโต้ตอบได้
+                                                        // หลังจากเรียกใช้งานฟังก์ชันเสร็จสิ้น คุณอาจต้องทำอย่างอื่นต่อไป เช่น ปิดกล่องโต้ตอบ (AlertDialog)
                                                         Navigator.of(context)
                                                             .pop();
                                                       },

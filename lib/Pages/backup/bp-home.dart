@@ -21,6 +21,12 @@ class _MyHomePageState extends State<MyHomePage> {
   GlobalKey _buildRomanceKey = GlobalKey();
   GlobalKey _buildHorrorKey = GlobalKey();
 
+  void initState() {
+    super.initState();
+    fetchAndClassifyScores();
+    fetchScores();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

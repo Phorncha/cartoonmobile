@@ -118,7 +118,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
       print('Error adding friend: $e');
     }
   }
-  // แสดงรายการเพื่อน
+
   Future<void> displayFriendsList() async {
     try {
       // ดึงผู้ใช้ปัจจุบันด้วย FirebaseAuth
@@ -301,7 +301,10 @@ class _AddFriendPageState extends State<AddFriendPage> {
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                 
+                                  IconButton(
+                                    icon: Icon(Icons.share),
+                                    onPressed: () {},
+                                  ),
                                   IconButton(
                                     icon: Icon(Icons.delete),
                                     onPressed: () {
@@ -320,7 +323,6 @@ class _AddFriendPageState extends State<AddFriendPage> {
                       ),
               ),
             ),
-
           ],
         ),
       ),

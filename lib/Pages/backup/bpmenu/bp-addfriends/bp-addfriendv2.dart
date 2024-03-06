@@ -12,10 +12,10 @@ class AddFriendPage extends StatefulWidget {
 class _AddFriendPageState extends State<AddFriendPage> {
   final TextEditingController _searchController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // ตัวแปร
   List<String> searchResults = [];
   List<String> showList = [];
-  List<String> deFriend = [];
+
+  bool _showFriendList = true;
 
   @override
   void initState() {
@@ -118,7 +118,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
       print('Error adding friend: $e');
     }
   }
-  // แสดงรายการเพื่อน
+
   Future<void> displayFriendsList() async {
     try {
       // ดึงผู้ใช้ปัจจุบันด้วย FirebaseAuth
@@ -151,43 +151,6 @@ class _AddFriendPageState extends State<AddFriendPage> {
       }
     } catch (e) {
       print('Error displaying friends list: $e');
-    }
-  }
-
-// ฟังก์ชันลบเพื่อน
-  Future<void> deleteFriend(String friendUsername) async {
-    try {
-      User? currentUser = FirebaseAuth.instance.currentUser;
-
-      if (currentUser != null) {
-        String currentUserId = currentUser.uid;
-
-        DocumentReference<Map<String, dynamic>> currentUserRef =
-            _firestore.collection('users').doc(currentUserId);
-
-        DocumentSnapshot<Map<String, dynamic>> currentUserDoc =
-            await currentUserRef.get();
-
-        if (currentUserDoc.exists) {
-          List<String> currentFriends =
-              currentUserDoc.data()?['friends']?.cast<String>() ?? [];
-
-          if (currentFriends.contains(friendUsername)) {
-            currentFriends.remove(friendUsername);
-
-            await currentUserRef.update({'friends': currentFriends});
-
-            print('Friend deleted successfully: $friendUsername');
-
-            // อัปเดต UI เพื่อแสดงรายการเพื่อนทันที
-            setState(() {
-              showList = currentFriends;
-            });
-          }
-        }
-      }
-    } catch (e) {
-      print('Error deleting friend: $e');
     }
   }
 
@@ -280,47 +243,41 @@ class _AddFriendPageState extends State<AddFriendPage> {
             ),
             SizedBox(height: 20),
             Flexible(
-              flex: 1,
               child: Container(
                 color: Colors.white,
-                child: showList.isEmpty
-                    ? Center(
-                        child: Text(
-                          'ไม่พบเพื่อน',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      )
-                    : ListView.builder(
-                        scrollDirection: Axis.vertical,
-                        itemCount: showList.length,
-                        itemBuilder: (context, index) {
-                          return Card(
-                            child: ListTile(
-                              leading: Icon(Icons.person),
-                              title: Text(showList[index]),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                 
-                                  IconButton(
-                                    icon: Icon(Icons.delete),
-                                    onPressed: () {
-                                      print(
-                                          'Deleting friend: ${showList[index]}');
-                                      setState(() {
-                                        deleteFriend(showList[index]);
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
+                child: ListView.builder(
+                  scrollDirection: Axis.vertical,
+                  itemCount: showList.length,
+                  itemBuilder: (context, index) {
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(Icons.person),
+                        // ผลลัพธ์
+                        title: Text(showList[index]),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.share),
+                              onPressed: () {},
                             ),
-                          );
-                        },
+                            IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  searchResults = [];
+                                });
+                              },
+                            ),
+                          ],
+                        ),
                       ),
+                    );
+                  },
+                ),
               ),
             ),
-
           ],
         ),
       ),

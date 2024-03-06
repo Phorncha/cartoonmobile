@@ -12,10 +12,10 @@ class AddFriendPage extends StatefulWidget {
 class _AddFriendPageState extends State<AddFriendPage> {
   final TextEditingController _searchController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // ตัวแปร
   List<String> searchResults = [];
   List<String> showList = [];
-  List<String> deFriend = [];
+
+  bool _showFriendList = true;
 
   @override
   void initState() {
@@ -36,8 +36,6 @@ class _AddFriendPageState extends State<AddFriendPage> {
             searchResults =
                 snapshot.docs.map((doc) => doc['username'] as String).toList();
           });
-          // อัปเดตข้อมูลเพื่อนที่แสดงทันที
-          displayFriendsList();
         });
       } else {
         setState(() {
@@ -84,8 +82,7 @@ class _AddFriendPageState extends State<AddFriendPage> {
                     content: Text('เพื่อน $friendUsername ถูกเพิ่มแล้ว'),
                   ),
                 );
-                // อัปเดตข้อมูลเพื่อนที่แสดงทันที
-                displayFriendsList();
+                // ถ้า friendUsername มีอยู่ในรายชื่อเพื่อนอยู่แล้ว
               } else {
                 print('User $friendUsername is already a friend.');
                 // จะแสดง SnackBar ว่าผู้ใช้เป็นเพื่อนอยู่แล้ว
@@ -118,32 +115,24 @@ class _AddFriendPageState extends State<AddFriendPage> {
       print('Error adding friend: $e');
     }
   }
-  // แสดงรายการเพื่อน
+
   Future<void> displayFriendsList() async {
     try {
-      // ดึงผู้ใช้ปัจจุบันด้วย FirebaseAuth
       User? currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser != null) {
-        // ดึง UID ของผู้ใช้ปัจจุบัน
         String currentUserId = currentUser.uid;
-        // อ้างอิงไปยังเอกสารผู้ใช้ปัจจุบันในคอลเลกชัน 'users' ใน Firestore
+
         DocumentReference<Map<String, dynamic>> currentUserRef =
             _firestore.collection('users').doc(currentUserId);
-        // ดึงสแนปช็อตของเอกสารผู้ใช้ปัจจุบัน
+
         DocumentSnapshot<Map<String, dynamic>> currentUserDoc =
             await currentUserRef.get();
-        // ตรวจสอบว่าเอกสารมีหรือไม่
+
         if (currentUserDoc.exists) {
-          // ดึงรายการเพื่อนจากข้อมูลเอกสารผู้ใช้ปัจจุบัน
           List<String> currentFriends =
               currentUserDoc.data()?['friends']?.cast<String>() ?? [];
 
-          // print('Current User ID: $currentUserId');
-          // print('Current User Document Data: ${currentUserDoc.data()}');
-          print('Current Friends: $currentFriends');
-
-          // อัปเดต UI เพื่อแสดงรายการเพื่อน
           setState(() {
             showList = currentFriends;
           });
@@ -154,47 +143,10 @@ class _AddFriendPageState extends State<AddFriendPage> {
     }
   }
 
-// ฟังก์ชันลบเพื่อน
-  Future<void> deleteFriend(String friendUsername) async {
-    try {
-      User? currentUser = FirebaseAuth.instance.currentUser;
-
-      if (currentUser != null) {
-        String currentUserId = currentUser.uid;
-
-        DocumentReference<Map<String, dynamic>> currentUserRef =
-            _firestore.collection('users').doc(currentUserId);
-
-        DocumentSnapshot<Map<String, dynamic>> currentUserDoc =
-            await currentUserRef.get();
-
-        if (currentUserDoc.exists) {
-          List<String> currentFriends =
-              currentUserDoc.data()?['friends']?.cast<String>() ?? [];
-
-          if (currentFriends.contains(friendUsername)) {
-            currentFriends.remove(friendUsername);
-
-            await currentUserRef.update({'friends': currentFriends});
-
-            print('Friend deleted successfully: $friendUsername');
-
-            // อัปเดต UI เพื่อแสดงรายการเพื่อนทันที
-            setState(() {
-              showList = currentFriends;
-            });
-          }
-        }
-      }
-    } catch (e) {
-      print('Error deleting friend: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
@@ -247,8 +199,6 @@ class _AddFriendPageState extends State<AddFriendPage> {
                             itemBuilder: (context, index) {
                               return Card(
                                 child: ListTile(
-                                  leading: Icon(Icons.person),
-                                  // ผลลัพธ์
                                   title: Text(searchResults[index]),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -280,47 +230,28 @@ class _AddFriendPageState extends State<AddFriendPage> {
             ),
             SizedBox(height: 20),
             Flexible(
-              flex: 1,
               child: Container(
                 color: Colors.white,
-                child: showList.isEmpty
+                child: _searchController.text.isEmpty
                     ? Center(
                         child: Text(
-                          'ไม่พบเพื่อน',
+                          '',
                           style: TextStyle(fontSize: 18),
                         ),
                       )
                     : ListView.builder(
-                        scrollDirection: Axis.vertical,
                         itemCount: showList.length,
                         itemBuilder: (context, index) {
                           return Card(
                             child: ListTile(
-                              leading: Icon(Icons.person),
                               title: Text(showList[index]),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                 
-                                  IconButton(
-                                    icon: Icon(Icons.delete),
-                                    onPressed: () {
-                                      print(
-                                          'Deleting friend: ${showList[index]}');
-                                      setState(() {
-                                        deleteFriend(showList[index]);
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
+                              trailing: Icon(Icons.person),
                             ),
                           );
                         },
                       ),
               ),
             ),
-
           ],
         ),
       ),

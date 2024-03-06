@@ -1,7 +1,3 @@
-// import 'dart:ui';
-
-// import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cartoonmobile/Pages/episode.dart';
@@ -38,6 +34,7 @@ class _DetailPageState extends State<DetailPage> {
   late List<String> episodeIds = [];
   String selectedEpisodeId = '';
   // bool isPressed = false;
+  bool isPurchased = false;
   // int count = 0;
 
   @override
@@ -546,8 +543,6 @@ class _DetailPageState extends State<DetailPage> {
                   children: episodes.asMap().entries.map((entry) {
                     int episodeNumber =
                         int.tryParse(episodes[entry.key].split(' ')[1]) ?? 0;
-
-                    // เช็คว่า EP มีการติด Icon Lock หรือไม่
                     bool isLocked = episodeNumber >= 4;
 
                     return Card(
@@ -559,48 +554,37 @@ class _DetailPageState extends State<DetailPage> {
                       ),
                       child: InkWell(
                         onTap: () async {
+                          String episode_id = episodeIds[entry.key];
+                          // ตรวจสอบว่ามีตอนที่ซื้อแล้วหรือไม่
+                          bool isPurchased = await isEpisodePurchased(
+                              _user?.uid ?? '', widget.id, episode_id);
+
                           if (_user == null && !isLocked) {
-                            // ถ้าผู้ใช้ไม่ได้เข้าสู่ระบบ และตอนไม่ได้ lock ให้ไปยังหน้า
-                            String episode_id = episodeIds[entry.key];
                             setState(() {
                               selectedEpisodeId = episode_id;
                             });
                             goToEpisodePage(episode_id);
                           } else if (_user == null) {
-                            // ถ้าผู้ใช้ไม่ได้เข้าสู่ระบบ ให้ไปยังหน้า MyProfile
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => MyProfile(),
                               ),
                             );
                           } else {
-                            // ถ้าผู้ใช้เข้าสู่ระบบ
-                            String episode_id = episodeIds[entry.key];
                             setState(() {
                               selectedEpisodeId = episode_id;
                             });
 
-                            bool isPurchased = await isEpisodePurchased(
-                              _user?.uid ?? '',
-                              widget.id,
-                              episode_id,
-                            );
-
                             if (!isPurchased) {
-                              // ตอนยังไม่ได้ซื้อ
                               if (isLocked) {
-                                // ดึงข้อมูล coin จาก Firestore
                                 DocumentSnapshot userDoc =
                                     await FirebaseFirestore.instance
                                         .collection('users')
                                         .doc(_user?.uid)
                                         .get();
-
-                                // ตรวจสอบว่ามีเหรียญพอหรือไม่
                                 int coins = userDoc['coin'] ?? 0;
 
                                 if (coins >= 15) {
-                                  // แสดงตัวเลือกการซื้อ
                                   showDialog(
                                     context: context,
                                     builder: (context) {
@@ -618,14 +602,12 @@ class _DetailPageState extends State<DetailPage> {
                                           TextButton(
                                             child: Text('ซื้อ'),
                                             onPressed: () async {
-                                              // สร้างฟังก์ชันเพิ่มข้อมูลในคอลเล็กชัน "Income"
                                               await addIncomeRecord(
                                                   _user?.uid,
                                                   widget.id,
                                                   widget.title,
                                                   episode_id);
 
-                                              // ทำการอัปเดตฟิลด์ purchasedEpisodes ใน Firestore
                                               await updatePurchasedEpisodes(
                                                 _user?.uid ?? '',
                                                 widget.id,
@@ -633,14 +615,12 @@ class _DetailPageState extends State<DetailPage> {
                                                 episode_id,
                                               );
 
-                                              // ทำการนำทางไปยังหน้า EpisodePage
                                               Navigator.of(context).pop();
                                               goToEpisodePage(episode_id);
-                                              // ลบเหรียญ 15 จาก Firestore
+
                                               await FirebaseFirestore.instance
                                                   .collection('users')
-                                                  .doc(_user?.uid ??
-                                                      '') // ใช้ null-aware operator ที่นี่
+                                                  .doc(_user?.uid ?? '')
                                                   .update({
                                                 'coin':
                                                     FieldValue.increment(-15),
@@ -652,7 +632,6 @@ class _DetailPageState extends State<DetailPage> {
                                     },
                                   );
                                 } else {
-                                  // แจ้งเตือนถ้าเงินไม่พอ
                                   showDialog(
                                     context: context,
                                     builder: (context) {
@@ -673,11 +652,9 @@ class _DetailPageState extends State<DetailPage> {
                                   );
                                 }
                               } else {
-                                // EP ไม่ติด Icon Lock ให้ไปยังหน้า EpisodePage โดยตรง
                                 goToEpisodePage(episode_id);
                               }
                             } else {
-                              // ถ้าตอนถูกซื้อแล้ว
                               goToEpisodePage(episode_id);
                             }
                           }
@@ -693,7 +670,6 @@ class _DetailPageState extends State<DetailPage> {
                               builder: (context, snapshot) {
                                 if (snapshot.connectionState ==
                                     ConnectionState.waiting) {
-                                  // แสดง CircularProgressIndicator ในระหว่างโหลดข้อมูล
                                   return Padding(
                                     padding: const EdgeInsets.all(8),
                                     child: ClipRRect(
@@ -716,22 +692,18 @@ class _DetailPageState extends State<DetailPage> {
                                   );
                                 } else {
                                   if (snapshot.hasError) {
-                                    // ถ้าเกิดข้อผิดพลาดในการโหลดข้อมูล
                                     return Text('Error: ${snapshot.error}');
                                   } else {
-                                    // ถ้าโหลดข้อมูลสำเร็จ
                                     List<dynamic> imagesDynamic =
                                         snapshot.data?['images'] ?? [];
                                     List<String> images = imagesDynamic
                                         .map((e) => e.toString())
                                         .cast<String>()
                                         .toList();
-                                    String imageUrl = images.isNotEmpty
-                                        ? images[0]
-                                        : ''; // ดึง URL ภาพแรกจาก images
+                                    String imageUrl =
+                                        images.isNotEmpty ? images[0] : '';
 
                                     if (imageUrl.isNotEmpty) {
-                                      // ถ้ามี URL ให้แสดงรูปภาพ
                                       return Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: ClipRRect(
@@ -748,7 +720,6 @@ class _DetailPageState extends State<DetailPage> {
                                         ),
                                       );
                                     } else {
-                                      // ถ้าไม่มี URL ให้ใช้ Container ว่าง
                                       return Padding(
                                         padding: const EdgeInsets.all(8.0),
                                         child: ClipRRect(
@@ -769,7 +740,7 @@ class _DetailPageState extends State<DetailPage> {
                             Column(
                               children: [
                                 Text(
-                                  'Ep ${episodes[entry.key].split(' ')[1]}',
+                                  ' ${episodeIds[entry.key]}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -778,7 +749,6 @@ class _DetailPageState extends State<DetailPage> {
                                 Row(
                                   children: [
                                     Icon(Icons.favorite, color: Colors.white),
-                                    //  แสดง data
                                     StreamBuilder<int>(
                                       stream:
                                           fetchRatingEP(episodeIds[entry.key]),
@@ -802,25 +772,45 @@ class _DetailPageState extends State<DetailPage> {
                               ],
                             ),
                             Spacer(),
-                            if (isLocked) {
-                                String episode_id = episodeIds[entry.key];
-                                bool isPurchased = await isEpisodePurchased(
-                                  _user?.uid ?? '',
-                                  widget.id,
-                                  episode_id,
-                                );
-
-                                if (isPurchased) {
-                                  // Episode ถูกซื้อแล้ว ไม่จำเป็นต้องแสดงไอคอนล็อคและราคา
-                                  return Container(); // หรือสามารถใส่วิดเจ็ตอื่นๆที่คุณต้องการแสดงแทน
-                                }
-                              }
-
-                              Text('15', style: TextStyle(fontSize: 16)),
-                              Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: Icon(Icons.monetization_on_outlined, color: Colors.black),
-                              ),
+                            if (isLocked)
+                              StreamBuilder<bool>(
+                                  stream: Stream.fromFuture(isEpisodePurchased(
+                                      _user?.uid ?? '',
+                                      widget.id,
+                                      episodeIds[entry.key])),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      // สถานะการโหลด
+                                      return CircularProgressIndicator();
+                                    } else if (snapshot.hasError) {
+                                      // สถานะข้อผิดพลาด
+                                      return Text('Error: ${snapshot.error}');
+                                    } else {
+                                      // ข้อมูลที่ได้รับ
+                                      bool isPurchased = snapshot.data ?? false;
+                                      if (!isPurchased) {
+                                        // ไม่ได้ซื้อ
+                                        return Column(
+                                          children: [
+                                            Text('15',
+                                                style: TextStyle(fontSize: 16)),
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 10),
+                                              child: Icon(
+                                                  Icons
+                                                      .monetization_on_outlined,
+                                                  color: Colors.black),
+                                            ),
+                                          ],
+                                        );
+                                      } else {
+                                        // ซื้อแล้ว
+                                        return SizedBox();
+                                      }
+                                    }
+                                  })
                           ],
                         ),
                       ),

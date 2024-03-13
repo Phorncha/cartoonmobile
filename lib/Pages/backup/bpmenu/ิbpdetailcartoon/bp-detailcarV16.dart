@@ -134,7 +134,7 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
   }
 
   void _shareWithFriend(String friendEmail, String episodeId) async {
-    // print('Sharing with friend: $friendEmail');
+    print('Sharing with friend: $friendEmail');
     try {
       // เรียกใช้งาน firebase
       _user = FirebaseAuth.instance.currentUser;
@@ -157,8 +157,8 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
           // ตรวจสอบว่ามีข้อมูลการแชร์กับเพื่อนคนนี้หรือไม่
           if (sharedWith.containsKey(friendEmail)) {
             // เรียกใช้ฟังก์ชัน _deleteExpiredShare() เพื่อลบข้อมูลที่หมดอายุทุกครั้งที่มีการแชร์ใหม่
-            // await _deleteExpiredShare(
-            //     friendEmail, widget.episodeData['id'], episodeId);
+            await _deleteExpiredShare(
+                friendEmail, widget.episodeData['id'], episodeId);
 
             Map<String, dynamic> friendShareData = sharedWith[friendEmail];
             if (friendShareData.containsKey(widget.episodeData['id'])) {
@@ -169,8 +169,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                 'sendTime': Timestamp.now(),
                 'expiration':
                     Timestamp.now().toDate().add(Duration(minutes: 1)),
-                // 'expiration':
-                // Timestamp.now().toDate().add(Duration(days: 3)),
               };
               friendShareData[widget.episodeData['id'].toString()]['episode'] =
                   episodes['episode'];
@@ -182,8 +180,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                     'sendTime': Timestamp.now(),
                     'expiration':
                         Timestamp.now().toDate().add(Duration(minutes: 1)),
-                    // 'expiration':
-                    // Timestamp.now().toDate().add(Duration(days: 3)),
                   }
                 },
               };
@@ -197,8 +193,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                     'sendTime': Timestamp.now(),
                     'expiration':
                         Timestamp.now().toDate().add(Duration(minutes: 1)),
-                    // 'expiration':
-                    // Timestamp.now().toDate().add(Duration(days: 3)),
                   }
                 },
               }
@@ -206,10 +200,10 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
           }
 
           // ตั้งเวลาเพื่อลบข้อมูลที่ตั้งไว้เมื่อครบกำหนด
-          // Timer(Duration(minutes: 1), () async {
-          //   await _deleteExpiredShare(
-          //       friendEmail, widget.episodeData['id'], episodeId);
-          // });
+          Timer(Duration(minutes: 1), () async {
+            await _deleteExpiredShare(
+                friendEmail, widget.episodeData['id'], episodeId);
+          });
 
           // อัปเดตข้อมูลการแชร์ใน Firestore
           await FirebaseFirestore.instance
@@ -218,11 +212,140 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
               .update({'share': sharedWith});
 
           // เรียกใช้งาน _saveSharedEpisode เพื่อบันทึกข้อมูลในฟิลด์ purchasedEpisodes
-          _saveSharedEpisode(friendEmail, episodeId, context);
+          _saveSharedEpisode(friendEmail, episodeId);
         }
       }
     } catch (e) {
       print('เกิดข้อผิดพลาดในการแชร์: $e');
+    }
+  }
+
+  void _saveSharedEpisode(
+    String friendEmail,
+    String episodeId,
+  ) async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: friendEmail)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        String friendUid = querySnapshot.docs.first.id;
+
+        DocumentSnapshot friendSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(friendUid)
+            .get();
+
+        if (friendSnapshot.exists) {
+          Map<String, dynamic>? friendData =
+              friendSnapshot.data() as Map<String, dynamic>?;
+
+          if (friendData != null &&
+              friendData.containsKey('purchasedEpisodes')) {
+            Map<String, dynamic>? purchasedEpisodesData =
+                friendData['purchasedEpisodes'] as Map<String, dynamic>?;
+
+            if (purchasedEpisodesData != null) {
+              // บันทึก ID และตอนที่ซื้อไปยังฟิลด์ purchasedEpisodes ของเพื่อน
+              if (purchasedEpisodesData.containsKey(widget.episodeData['id'])) {
+                // ตรวจสอบว่ามีข้อมูลการซื้อของการ์ตูนนี้อยู่แล้วหรือไม่
+                Map<String, dynamic> friendPurchasedEpisodes =
+                    purchasedEpisodesData[widget.episodeData['id']]
+                        as Map<String, dynamic>;
+
+                // ตรวจสอบว่ามี ID และตอนที่ซื้ออยู่แล้วหรือไม่
+                if (!friendPurchasedEpisodes.containsKey(episodeId)) {
+                  // ถ้าไม่มีให้เพิ่ม ID และตอนที่ซื้อลงในฟิลด์ purchasedEpisodes ของเพื่อน
+                  friendPurchasedEpisodes['episodes'][episodeId] = {
+                    'episode': episodeId,
+                    'sendTime': Timestamp.now(),
+                    'expiration':
+                        Timestamp.now().toDate().add(Duration(minutes: 1)),
+                  };
+                  // อัพเดทตอนที่ซื้อของเพื่อนในฐานข้อมูล
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(friendUid)
+                      .update({'purchasedEpisodes': purchasedEpisodesData});
+                } else {
+                  // ถ้ามีอยู่แล้วให้ไม่ต้องทำอะไร
+                  print('Friend already has purchased episode: $episodeId');
+                }
+              } else {
+                // ถ้ายังไม่มีข้อมูลการซื้อของการ์ตูนนี้ ให้สร้างฟิลด์ purchasedEpisodes ใหม่
+                Map<String, dynamic> friendPurchasedEpisodes = {
+                  episodeId: {
+                    'episode': episodeId,
+                    'sendTime': Timestamp.now(),
+                    'expiration':
+                        Timestamp.now().toDate().add(Duration(minutes: 1)),
+                  }
+                };
+
+                purchasedEpisodesData[widget.episodeData['id']] = {
+                  'episodes': friendPurchasedEpisodes
+                };
+
+                // อัพเดทตอนที่ซื้อของเพื่อนในฐานข้อมูล
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(friendUid)
+                    .update({'purchasedEpisodes': purchasedEpisodesData});
+              }
+            } else {
+              // ถ้ายังไม่มีฟิลด์ purchasedEpisodes ในข้อมูลของเพื่อน ให้สร้างใหม่
+              Map<String, dynamic> friendPurchasedEpisodes = {
+                episodeId: {
+                  'episode': episodeId,
+                  'sendTime': Timestamp.now(),
+                  'expiration':
+                      Timestamp.now().toDate().add(Duration(minutes: 1)),
+                },
+              };
+              // อัพเดทตอนที่ซื้อของเพื่อนในฐานข้อมูล
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(friendUid)
+                  .update({
+                'purchasedEpisodes': {
+                  widget.episodeData['id']: {
+                    'episodes': {
+                      episodeId: friendPurchasedEpisodes,
+                    }
+                  }
+                }
+              });
+            }
+          } else {
+            // ถ้ายังไม่มีข้อมูลการซื้อของเพื่อนเลย ให้สร้างฟิลด์ purchasedEpisodes ใหม่
+            Map<String, dynamic> friendPurchasedEpisodes = {
+              episodeId: {
+                'episode': episodeId,
+                'sendTime': Timestamp.now(),
+                'expiration':
+                    Timestamp.now().toDate().add(Duration(minutes: 1)),
+              },
+            };
+            // อัพเดทตอนที่ซื้อของเพื่อนในฐานข้อมูล
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(friendUid)
+                .update({
+              'purchasedEpisodes': {
+                widget.episodeData['id']: {'episodes': friendPurchasedEpisodes}
+              }
+            });
+          }
+        } else {
+          print('User with UID $friendUid not found.');
+        }
+      } else {
+        print('User with email $friendEmail not found.');
+      }
+    } catch (e) {
+      print('Error saving shared episode: $e');
     }
   }
 
@@ -263,216 +386,12 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                   .collection('users')
                   .doc(_user!.uid)
                   .update({'share': sharedWith});
-
-              // บันทึก log เมื่อมีการลบข้อมูล
-              print(
-                  'Deleted expired share for friend: $friendName - Episode Data ID: $episodeDataId - Episode ID: $episodeId');
             }
           }
         }
       }
     } catch (e) {
       print('เกิดข้อผิดพลาดในการลบข้อมูลที่หมดอายุ: $e');
-    }
-  }
-
-  void _saveSharedEpisode(
-      String friendEmail, String episodeId, BuildContext context) async {
-    try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: friendEmail)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        String friendUid = querySnapshot.docs.first.id;
-
-        DocumentSnapshot friendSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(friendUid)
-            .get();
-
-        if (friendSnapshot.exists) {
-          Map<String, dynamic>? friendData =
-              friendSnapshot.data() as Map<String, dynamic>?;
-
-          if (friendData != null &&
-              friendData.containsKey('purchasedEpisodes')) {
-            Map<String, dynamic>? purchasedEpisodesData =
-                friendData['purchasedEpisodes'] as Map<String, dynamic>?;
-
-            if (purchasedEpisodesData != null) {
-              if (!purchasedEpisodesData
-                  .containsKey(widget.episodeData['id'])) {
-                Map<String, dynamic> friendPurchasedEpisodes = {
-                  episodeId: {
-                    episodeId: episodeId,
-                    'sendTime': Timestamp.now(),
-                    'expiration':
-                        Timestamp.now().toDate().add(Duration(minutes: 1)),
-                  }
-                };
-
-                purchasedEpisodesData[widget.episodeData['id']] = {
-                  'episodes': friendPurchasedEpisodes
-                };
-
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(friendUid)
-                    .update({'purchasedEpisodes': purchasedEpisodesData});
-
-                Timer(Duration(minutes: 1), () async {
-                  await deleteExpiredEpisodes(
-                      friendEmail, widget.episodeData['id'], episodeId);
-                });
-              } else {
-                Map<String, dynamic>? friendPurchasedEpisodes =
-                    purchasedEpisodesData[widget.episodeData['id']]['episodes']
-                        as Map<String, dynamic>?;
-
-                if (friendPurchasedEpisodes != null &&
-                    !friendPurchasedEpisodes.containsKey(episodeId)) {
-                  // เพิ่มตอนที่ผู้ใช้แชร์ลงในฐานข้อมูลของเพื่อน
-                  friendPurchasedEpisodes[episodeId] = {
-                    episodeId: episodeId,
-                    'sendTime': Timestamp.now(),
-                    'expiration':
-                        Timestamp.now().toDate().add(Duration(minutes: 1)),
-                  };
-                  // อัพเดทข้อมูลใน Firestore
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(friendUid)
-                      .update({'purchasedEpisodes': purchasedEpisodesData});
-
-                  Timer(Duration(minutes: 1), () async {
-                    await deleteExpiredEpisodes(
-                        friendEmail, widget.episodeData['id'], episodeId);
-                  });
-                }
-              }
-            } else {
-              Map<String, dynamic> friendPurchasedEpisodes = {
-                episodeId: {
-                  episodeId: episodeId,
-                  'sendTime': Timestamp.now(),
-                  'expiration':
-                      Timestamp.now().toDate().add(Duration(minutes: 1)),
-                }
-              };
-
-              await FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(friendUid)
-                  .update({
-                'purchasedEpisodes': {
-                  widget.episodeData['id']: {
-                    'episodes': friendPurchasedEpisodes
-                  }
-                }
-              });
-
-              Timer(Duration(minutes: 1), () async {
-                await deleteExpiredEpisodes(
-                    friendEmail, widget.episodeData['id'], episodeId);
-              });
-            }
-          } else {
-            Map<String, dynamic> friendPurchasedEpisodes = {
-              episodeId: {
-                episodeId: episodeId,
-                'sendTime': Timestamp.now(),
-                'expiration':
-                    Timestamp.now().toDate().add(Duration(minutes: 1)),
-              }
-            };
-
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(friendUid)
-                .update({
-              'purchasedEpisodes': {
-                widget.episodeData['id']: {'episodes': friendPurchasedEpisodes}
-              }
-            });
-
-            Timer(Duration(minutes: 1), () async {
-              await deleteExpiredEpisodes(
-                  friendEmail, widget.episodeData['id'], episodeId);
-            });
-          }
-        } else {
-          print('User with UID $friendUid not found.');
-        }
-      } else {
-        print('User with email $friendEmail not found.');
-      }
-    } catch (e) {
-      print('Error saving shared episode: $e');
-    }
-  }
-
-  Future<void> deleteExpiredEpisodes(
-      String friendEmail, episodeData, String episodeId) async {
-    try {
-      QuerySnapshot querySnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
-
-      for (QueryDocumentSnapshot userSnapshot in querySnapshot.docs) {
-        Map<String, dynamic>? userData =
-            userSnapshot.data() as Map<String, dynamic>?;
-
-        if (userData != null && userData.containsKey('purchasedEpisodes')) {
-          Map<String, dynamic>? purchasedEpisodesData =
-              userData['purchasedEpisodes'] as Map<String, dynamic>?;
-
-          if (purchasedEpisodesData != null) {
-            for (String cartoonId in purchasedEpisodesData.keys) {
-              Map<String, dynamic>? episodesData =
-                  purchasedEpisodesData[cartoonId]['episodes']
-                      as Map<String, dynamic>?;
-
-              if (episodesData != null) {
-                List<String> expiredEpisodes = [];
-                for (String episodeId in episodesData.keys) {
-                  Map<String, dynamic>? episodeInfo =
-                      episodesData[episodeId] as Map<String, dynamic>?;
-
-                  if (episodeInfo != null &&
-                      episodeInfo.containsKey('expiration')) {
-                    Timestamp expiration =
-                        episodeInfo['expiration'] as Timestamp;
-
-                    // Check if current time is after the expiration time
-                    if (DateTime.now().isAfter(expiration.toDate())) {
-                      // If current time is after expiration time, add episodeId to the list of expired episodes
-                      expiredEpisodes.add(episodeId);
-                    }
-                  }
-                }
-
-                // Remove expired episodes from the user's purchased episodes
-                for (String episodeId in expiredEpisodes) {
-                  episodesData.remove(episodeId);
-                }
-
-                // Update user's purchased episodes data
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(userSnapshot.id)
-                    .update({'purchasedEpisodes': purchasedEpisodesData});
-
-                // Log deleted episodes
-                print(
-                    'Deleted expired episodes for user ${userSnapshot.id}: $expiredEpisodes');
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      print('Error deleting expired episodes: $e');
     }
   }
 
@@ -579,7 +498,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                                                               friendIndex],
                                                           _purchasedEpisodesData[
                                                               index]['id'],
-                                                          context,
                                                         );
 
                                                         // หลังจากเรียกใช้งานฟังก์ชันเสร็จสิ้น คุณอาจต้องทำอย่างอื่นต่อไป เช่น ปิดกล่องโต้ตอบ (AlertDialog)

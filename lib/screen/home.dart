@@ -60,7 +60,7 @@ class _HomePageState extends State<HomePage> {
         children: <Widget>[
           MyHomePage(),
           MyTablePage(),
-          MyFavoritePage(),
+           MyFavoritePage(),
           widget.isLoggedIn
               ? MyProfilePage(email: widget._auth.currentUser?.email)
               : MyProfile(),
@@ -74,6 +74,8 @@ class _HomePageState extends State<HomePage> {
             _selectedTab = index;
           });
         },
+         backgroundColor: Colors.pink,
+           color: Colors.white,
         items: <Widget>[
           Icon(Icons.home, size: 30),
           Icon(Icons.table_chart, size: 30),

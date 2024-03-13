@@ -72,7 +72,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
           bottom: TabBar(
             tabs: [
               Tab(text: 'เติมเงิน'),
-              Tab(text: 'การตูนร์ของฉัน'),
+              Tab(text: 'การ์ตูนของฉัน'),
               Tab(text: 'เพื่อน'),
             ],
           ),

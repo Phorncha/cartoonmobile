@@ -302,8 +302,53 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                 friendData['purchasedEpisodes'] as Map<String, dynamic>?;
 
             if (purchasedEpisodesData != null) {
-              if (!purchasedEpisodesData
-                  .containsKey(widget.episodeData['id'])) {
+              if (purchasedEpisodesData.containsKey(widget.episodeData['id'])) {
+                Map<String, dynamic>? friendPurchasedEpisodes =
+                    purchasedEpisodesData[widget.episodeData['id']]['episodes']
+                        as Map<String, dynamic>?;
+
+                if (friendPurchasedEpisodes != null) {
+                  if (friendPurchasedEpisodes.containsKey(episodeId)) {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          // title: Text('Error'),
+                          content:
+                              Text('เพื่อนคุณมีตอนที่: $episodeId อยู่แล้ว'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: Text('OK'),
+                            )
+                          ],
+                        );
+                      },
+                    );
+                    return;
+                  } else {
+                    // เพิ่มตอนที่ผู้ใช้แชร์ลงในฐานข้อมูลของเพื่อน
+                    friendPurchasedEpisodes[episodeId] = {
+                      episodeId: episodeId,
+                      'sendTime': Timestamp.now(),
+                      'expiration':
+                          Timestamp.now().toDate().add(Duration(minutes: 1)),
+                    };
+                    // อัพเดทข้อมูลใน Firestore
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(friendUid)
+                        .update({'purchasedEpisodes': purchasedEpisodesData});
+
+                    Timer(Duration(minutes: 1), () async {
+                      await deleteExpiredEpisodes(
+                          friendEmail, widget.episodeData['id'], episodeId);
+                    });
+                  }
+                }
+              } else {
                 Map<String, dynamic> friendPurchasedEpisodes = {
                   episodeId: {
                     episodeId: episodeId,
@@ -326,31 +371,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                   await deleteExpiredEpisodes(
                       friendEmail, widget.episodeData['id'], episodeId);
                 });
-              } else {
-                Map<String, dynamic>? friendPurchasedEpisodes =
-                    purchasedEpisodesData[widget.episodeData['id']]['episodes']
-                        as Map<String, dynamic>?;
-
-                if (friendPurchasedEpisodes != null &&
-                    !friendPurchasedEpisodes.containsKey(episodeId)) {
-                  // เพิ่มตอนที่ผู้ใช้แชร์ลงในฐานข้อมูลของเพื่อน
-                  friendPurchasedEpisodes[episodeId] = {
-                    episodeId: episodeId,
-                    'sendTime': Timestamp.now(),
-                    'expiration':
-                        Timestamp.now().toDate().add(Duration(minutes: 1)),
-                  };
-                  // อัพเดทข้อมูลใน Firestore
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(friendUid)
-                      .update({'purchasedEpisodes': purchasedEpisodesData});
-
-                  Timer(Duration(minutes: 1), () async {
-                    await deleteExpiredEpisodes(
-                        friendEmail, widget.episodeData['id'], episodeId);
-                  });
-                }
               }
             } else {
               Map<String, dynamic> friendPurchasedEpisodes = {

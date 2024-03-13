@@ -81,28 +81,6 @@ class LoginPage extends StatelessWidget {
       onSignup: (data) async {
         return await signUp(data.name, data.password);
       },
-      // loginProviders: <LoginProvider>[
-      //   LoginProvider(
-      //     icon: FontAwesomeIcons.google,
-      //     label: 'Google',
-      //     callback: () async {
-      //       debugPrint('start google sign in');
-      //       await Future.delayed(loginTime);
-      //       debugPrint('stop google sign in');
-      //       return null;
-      //     },
-      //   ),
-      //   LoginProvider(
-      //     icon: FontAwesomeIcons.facebookF,
-      //     label: 'Facebook',
-      //     callback: () async {
-      //       debugPrint('start facebook sign in');
-      //       await Future.delayed(loginTime);
-      //       debugPrint('stop facebook sign in');
-      //       return null;
-      //     },
-      //   ),
-      // ],
       onSubmitAnimationCompleted: () {
         Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => HomePage(),

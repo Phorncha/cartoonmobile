@@ -156,10 +156,21 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
 
           // ตรวจสอบว่ามีข้อมูลการแชร์กับเพื่อนคนนี้หรือไม่
           if (sharedWith.containsKey(friendName)) {
-            // ตรวจสอบว่ามีข้อมูล episode ของเพื่อนหรือยัง
+            // เรียกใช้ฟังก์ชัน _deleteExpiredShare() เพื่อลบข้อมูลที่หมดอายุทุกครั้งที่มีการแชร์ใหม่
+            await _deleteExpiredShare(
+                friendName, widget.episodeData['id'], episodeId);
+
             Map<String, dynamic> friendShareData = sharedWith[friendName];
-            if (!friendShareData.containsKey(widget.episodeData['id'])) {
-              // ถ้าไม่มีข้อมูล episode ของเพื่อน ให้เพิ่มข้อมูลใหม่ลงไป
+            if (friendShareData.containsKey(widget.episodeData['id'])) {
+              Map<String, dynamic> episodes =
+                  Map.from(friendShareData[widget.episodeData['id']]);
+              episodes['episode'][episodeId] = {
+                'expiration':
+                    Timestamp.now().toDate().add(Duration(minutes: 1)),
+              };
+              friendShareData[widget.episodeData['id'].toString()]['episode'] =
+                  episodes['episode'];
+            } else {
               friendShareData[widget.episodeData['id'].toString()] = {
                 'episode': {
                   episodeId: {
@@ -168,26 +179,8 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                   }
                 },
               };
-
-              // ตั้งเวลาเพื่อลบข้อมูลที่ตั้งไว้เมื่อครบกำหนด
-              Timer(Duration(minutes: 1), () async {
-                await _deleteExpiredShare(
-                    friendName, widget.episodeData['id'], episodeId);
-              });
-            } else {
-              // ถ้ามีข้อมูล episode ของเพื่อนคนนี้อยู่แล้ว ให้เพิ่ม episodeId เข้าไปใน map ที่มีอยู่แล้ว
-              Map<String, dynamic> episodes =
-                  Map.from(friendShareData[widget.episodeData['id']]);
-              episodes['episode'][episodeId] = {
-                // 'timestamp': Timestamp.now().toDate(),
-                'expiration':
-                    Timestamp.now().toDate().add(Duration(minutes: 1)),
-              };
-              friendShareData[widget.episodeData['id'].toString()]['episode'] =
-                  episodes['episode'];
             }
           } else {
-            // ถ้ายังไม่มีการแชร์ เริ่มต้นการแชร์โดยเพิ่มข้อมูลใหม่
             sharedWith[friendName] = {
               widget.episodeData['id'].toString(): {
                 'episode': {
@@ -198,13 +191,13 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                 },
               }
             };
-
-            // ตั้งเวลาเพื่อลบข้อมูลที่ตั้งไว้เมื่อครบกำหนด
-            Timer(Duration(minutes: 1), () async {
-              await _deleteExpiredShare(
-                  friendName, widget.episodeData['id'], episodeId);
-            });
           }
+
+          // ตั้งเวลาเพื่อลบข้อมูลที่ตั้งไว้เมื่อครบกำหนด
+          Timer(Duration(minutes: 1), () async {
+            await _deleteExpiredShare(
+                friendName, widget.episodeData['id'], episodeId);
+          });
 
           // อัปเดตข้อมูลการแชร์ใน Firestore
           await FirebaseFirestore.instance

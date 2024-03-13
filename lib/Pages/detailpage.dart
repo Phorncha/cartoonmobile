@@ -304,8 +304,8 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   // อัปเดตข้อมูลการซื้อของผู้ใช้ใน Firestore เมื่อมีการซื้อตอนใหม่
-  Future<void> updatePurchasedEpisodes(String userId, String storyId,
-      String storyTitle, String episodeId) async {
+ Future<void> updatePurchasedEpisodes(String userId, String storyId,
+      String storyTitle, String episodeId, DateTime purchaseTime) async {
     try {
       // อ้างอิงไปยังเอกสารผู้ใช้ในคอลเล็กชัน "users"
       final userRef =
@@ -331,12 +331,20 @@ class _DetailPageState extends State<DetailPage> {
             // ตอนถูกซื้อแล้ว, ไม่ต้องทำอะไร
           } else {
             // ตอนยังไม่ได้ซื้อ, เพิ่ม episodeId เข้าไปใน storyPurchases
-            storyPurchases[episodeId] = episodeId;
+            storyPurchases[episodeId] = {
+              'episodeId': episodeId,
+              'purchaseTime': purchaseTime,
+            };
           }
         } else {
           // เรื่องยังไม่ได้ซื้อ, เพิ่มเรื่องใน purchasedEpisodes
           purchasedEpisodes[storyId] = {
-            'episodes': {episodeId: episodeId}
+            'episodes': {
+              episodeId: {
+                'episodeId': episodeId,
+                'purchaseTime': purchaseTime,
+              },
+            },
           };
         }
 
@@ -613,6 +621,7 @@ class _DetailPageState extends State<DetailPage> {
                                                 widget.id,
                                                 widget.title,
                                                 episode_id,
+                                                 DateTime.now(), 
                                               );
 
                                               Navigator.of(context).pop();

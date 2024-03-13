@@ -218,7 +218,7 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
               .update({'share': sharedWith});
 
           // เรียกใช้งาน _saveSharedEpisode เพื่อบันทึกข้อมูลในฟิลด์ purchasedEpisodes
-          _saveSharedEpisode(friendEmail, episodeId, context);
+          _saveSharedEpisode(friendEmail, episodeId);
         }
       }
     } catch (e) {
@@ -276,9 +276,9 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
     }
   }
 
-  void _saveSharedEpisode(
-      String friendEmail, String episodeId, BuildContext context) async {
+  void _saveSharedEpisode(String friendEmail, String episodeId) async {
     try {
+      // ดึงข้อมูลของเพื่อนจาก Firestore
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collection('users')
           .where('email', isEqualTo: friendEmail)
@@ -302,14 +302,49 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                 friendData['purchasedEpisodes'] as Map<String, dynamic>?;
 
             if (purchasedEpisodesData != null) {
-              if (!purchasedEpisodesData
-                  .containsKey(widget.episodeData['id'])) {
+              // บันทึก ID และตอนที่ซื้อไปยังฟิลด์ purchasedEpisodes ของเพื่อน
+              if (purchasedEpisodesData.containsKey(widget.episodeData['id'])) {
+                Map<String, dynamic> friendPurchasedEpisodes =
+                    purchasedEpisodesData[widget.episodeData['id']]
+                        as Map<String, dynamic>;
+
+                // ตรวจสอบว่ามี ID และตอนที่ซื้ออยู่แล้วหรือไม่
+                if (!friendPurchasedEpisodes.containsKey(episodeId)) {
+                  // ถ้าไม่มีให้เพิ่ม ID และตอนที่ซื้อลงในฟิลด์ purchasedEpisodes ของเพื่อน
+                  friendPurchasedEpisodes['episodes'][episodeId] = {
+                    episodeId: episodeId,
+                    'sendTime': Timestamp.now(),
+                    'expiration':
+                        Timestamp.now().toDate().add(Duration(minutes: 1)),
+                    // 'expiration':
+                    // Timestamp.now().toDate().add(Duration(days: 3)),
+                  };
+
+                  // อัพเดทตอนที่ซื้อของเพื่อนในฐานข้อมูล
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(friendUid)
+                      .update({'purchasedEpisodes': purchasedEpisodesData});
+
+                  // ตั้งเวลาเพื่อลบตอนที่หมดอายุ
+                  Timer(Duration(minutes: 1), () async {
+                    await deleteExpiredEpisodes(
+                        friendEmail, widget.episodeData['id'], episodeId);
+                  });
+                } else {
+                  // ถ้ามีอยู่แล้วให้ไม่ต้องทำอะไร
+                  print('Friend already has purchased episode: $episodeId');
+                }
+              } else {
+                // ถ้ายังไม่มีข้อมูลการซื้อของการ์ตูนนี้ ให้สร้างฟิลด์ purchasedEpisodes ใหม่
                 Map<String, dynamic> friendPurchasedEpisodes = {
                   episodeId: {
                     episodeId: episodeId,
                     'sendTime': Timestamp.now(),
                     'expiration':
                         Timestamp.now().toDate().add(Duration(minutes: 1)),
+                    // 'expiration':
+                    // Timestamp.now().toDate().add(Duration(days: 3)),
                   }
                 };
 
@@ -317,51 +352,32 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                   'episodes': friendPurchasedEpisodes
                 };
 
+                // อัพเดทตอนที่ซื้อของเพื่อนในฐานข้อมูล
                 await FirebaseFirestore.instance
                     .collection('users')
                     .doc(friendUid)
                     .update({'purchasedEpisodes': purchasedEpisodesData});
 
+                // ตั้งเวลาเพื่อลบตอนที่หมดอายุ
                 Timer(Duration(minutes: 1), () async {
                   await deleteExpiredEpisodes(
                       friendEmail, widget.episodeData['id'], episodeId);
                 });
-              } else {
-                Map<String, dynamic>? friendPurchasedEpisodes =
-                    purchasedEpisodesData[widget.episodeData['id']]['episodes']
-                        as Map<String, dynamic>?;
-
-                if (friendPurchasedEpisodes != null &&
-                    !friendPurchasedEpisodes.containsKey(episodeId)) {
-                  // เพิ่มตอนที่ผู้ใช้แชร์ลงในฐานข้อมูลของเพื่อน
-                  friendPurchasedEpisodes[episodeId] = {
-                    episodeId: episodeId,
-                    'sendTime': Timestamp.now(),
-                    'expiration':
-                        Timestamp.now().toDate().add(Duration(minutes: 1)),
-                  };
-                  // อัพเดทข้อมูลใน Firestore
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(friendUid)
-                      .update({'purchasedEpisodes': purchasedEpisodesData});
-
-                  Timer(Duration(minutes: 1), () async {
-                    await deleteExpiredEpisodes(
-                        friendEmail, widget.episodeData['id'], episodeId);
-                  });
-                }
               }
             } else {
+              // ถ้ายังไม่มีฟิลด์ purchasedEpisodes ในข้อมูลของเพื่อน ให้สร้างใหม่
               Map<String, dynamic> friendPurchasedEpisodes = {
                 episodeId: {
                   episodeId: episodeId,
                   'sendTime': Timestamp.now(),
                   'expiration':
                       Timestamp.now().toDate().add(Duration(minutes: 1)),
+                  // 'expiration':
+                  // Timestamp.now().toDate().add(Duration(days: 3)),
                 }
               };
 
+              // อัพเดทตอนที่ซื้อของเพื่อนในฐานข้อมูล
               await FirebaseFirestore.instance
                   .collection('users')
                   .doc(friendUid)
@@ -373,21 +389,26 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                 }
               });
 
+              // ตั้งเวลาเพื่อลบตอนที่หมดอายุ
               Timer(Duration(minutes: 1), () async {
                 await deleteExpiredEpisodes(
                     friendEmail, widget.episodeData['id'], episodeId);
               });
             }
           } else {
+            // ถ้ายังไม่มีข้อมูลการซื้อของเพื่อนเลย ให้สร้างฟิลด์ purchasedEpisodes ใหม่
             Map<String, dynamic> friendPurchasedEpisodes = {
               episodeId: {
                 episodeId: episodeId,
                 'sendTime': Timestamp.now(),
                 'expiration':
                     Timestamp.now().toDate().add(Duration(minutes: 1)),
+                // 'expiration':
+                // Timestamp.now().toDate().add(Duration(days: 3)),
               }
             };
 
+            // อัพเดทตอนที่ซื้อของเพื่อนในฐานข้อมูล
             await FirebaseFirestore.instance
                 .collection('users')
                 .doc(friendUid)
@@ -397,11 +418,15 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
               }
             });
 
+            // ตั้งเวลาเพื่อลบตอนที่หมดอายุ
             Timer(Duration(minutes: 1), () async {
               await deleteExpiredEpisodes(
                   friendEmail, widget.episodeData['id'], episodeId);
             });
           }
+
+          // เรียกใช้งานฟังก์ชันลบตอนที่หมดอายุ
+          // await deleteExpiredEpisodes();
         } else {
           print('User with UID $friendUid not found.');
         }
@@ -579,7 +604,6 @@ class _DetailCartoonpageState extends State<DetailCartoonpage> {
                                                               friendIndex],
                                                           _purchasedEpisodesData[
                                                               index]['id'],
-                                                          context,
                                                         );
 
                                                         // หลังจากเรียกใช้งานฟังก์ชันเสร็จสิ้น คุณอาจต้องทำอย่างอื่นต่อไป เช่น ปิดกล่องโต้ตอบ (AlertDialog)

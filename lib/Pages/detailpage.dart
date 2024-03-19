@@ -279,6 +279,8 @@ class _DetailPageState extends State<DetailPage> {
         int totalCoins = incomeQuery.docs.isNotEmpty
             ? incomeQuery.docs.first['coin'] + 15
             : 15;
+      // รับเวลาปัจจุบัน
+      DateTime now = DateTime.now();
 
         // บันทึกหรืออัปเดตข้อมูลในคอลเล็กชัน "Income"
         if (incomeQuery.docs.isNotEmpty) {
@@ -291,6 +293,7 @@ class _DetailPageState extends State<DetailPage> {
             'storyId': storyId ?? '',
             'title': title ?? '',
             'coin': totalCoins,
+            'PurchaseTime': now,
           });
         }
 
@@ -304,7 +307,7 @@ class _DetailPageState extends State<DetailPage> {
   }
 
   // อัปเดตข้อมูลการซื้อของผู้ใช้ใน Firestore เมื่อมีการซื้อตอนใหม่
- Future<void> updatePurchasedEpisodes(String userId, String storyId,
+  Future<void> updatePurchasedEpisodes(String userId, String storyId,
       String storyTitle, String episodeId, DateTime purchaseTime) async {
     try {
       // อ้างอิงไปยังเอกสารผู้ใช้ในคอลเล็กชัน "users"
@@ -418,7 +421,8 @@ class _DetailPageState extends State<DetailPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
-                  children: [
+                  children: [ 
+                    // image
                     Padding(
                       padding: EdgeInsets.all(2),
                       child: Column(
@@ -441,7 +445,7 @@ class _DetailPageState extends State<DetailPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(''),
+                            // Title
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -455,13 +459,13 @@ class _DetailPageState extends State<DetailPage> {
                                   child: Text(
                                     widget.title,
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            Text(''),
+                          // Author
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -475,12 +479,41 @@ class _DetailPageState extends State<DetailPage> {
                                   child: Text(
                                     widget.author,
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
+                            // Description
+                            Text('Description: ',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),),
+                            Container(
+                              width: 300,
+                              height: 200,
+                              // color: Colors.white,  
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
+                                      child: Text(
+                                        widget.description,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+
                             Row(
                               children: [
                                 IconButton(
@@ -523,7 +556,7 @@ class _DetailPageState extends State<DetailPage> {
                                   builder: (context, snapshot) {
                                     return Text(
                                       '${snapshot.data ?? 0}',
-                                      style: TextStyle(fontSize: 16),
+                                      style: TextStyle(fontSize: 14),
                                     );
                                   },
                                 ),
@@ -551,7 +584,8 @@ class _DetailPageState extends State<DetailPage> {
                   children: episodes.asMap().entries.map((entry) {
                     int episodeNumber =
                         int.tryParse(episodes[entry.key].split(' ')[1]) ?? 0;
-                    bool isLocked = episodeNumber >= 4;
+                        // สั่ง lock Ep
+                    bool isLocked = episodeNumber >= 2 ;
 
                     return Card(
                       clipBehavior: Clip.antiAliasWithSaveLayer,
@@ -621,7 +655,7 @@ class _DetailPageState extends State<DetailPage> {
                                                 widget.id,
                                                 widget.title,
                                                 episode_id,
-                                                 DateTime.now(), 
+                                                DateTime.now(),
                                               );
 
                                               Navigator.of(context).pop();
@@ -754,7 +788,7 @@ class _DetailPageState extends State<DetailPage> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: 10),
+                                SizedBox(height: 9),
                                 Row(
                                   children: [
                                     Icon(Icons.favorite, color: Colors.white),

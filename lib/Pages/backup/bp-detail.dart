@@ -279,6 +279,8 @@ class _DetailPageState extends State<DetailPage> {
         int totalCoins = incomeQuery.docs.isNotEmpty
             ? incomeQuery.docs.first['coin'] + 15
             : 15;
+        // รับเวลาปัจจุบัน
+        DateTime now = DateTime.now();
 
         // บันทึกหรืออัปเดตข้อมูลในคอลเล็กชัน "Income"
         if (incomeQuery.docs.isNotEmpty) {
@@ -291,6 +293,7 @@ class _DetailPageState extends State<DetailPage> {
             'storyId': storyId ?? '',
             'title': title ?? '',
             'coin': totalCoins,
+            'PurchaseTime': now,
           });
         }
 
@@ -305,7 +308,7 @@ class _DetailPageState extends State<DetailPage> {
 
   // อัปเดตข้อมูลการซื้อของผู้ใช้ใน Firestore เมื่อมีการซื้อตอนใหม่
   Future<void> updatePurchasedEpisodes(String userId, String storyId,
-      String storyTitle, String episodeId) async {
+      String storyTitle, String episodeId, DateTime purchaseTime) async {
     try {
       // อ้างอิงไปยังเอกสารผู้ใช้ในคอลเล็กชัน "users"
       final userRef =
@@ -331,12 +334,20 @@ class _DetailPageState extends State<DetailPage> {
             // ตอนถูกซื้อแล้ว, ไม่ต้องทำอะไร
           } else {
             // ตอนยังไม่ได้ซื้อ, เพิ่ม episodeId เข้าไปใน storyPurchases
-            storyPurchases[episodeId] = episodeId;
+            storyPurchases[episodeId] = {
+              'episodeId': episodeId,
+              'purchaseTime': purchaseTime,
+            };
           }
         } else {
           // เรื่องยังไม่ได้ซื้อ, เพิ่มเรื่องใน purchasedEpisodes
           purchasedEpisodes[storyId] = {
-            'episodes': {episodeId: episodeId}
+            'episodes': {
+              episodeId: {
+                'episodeId': episodeId,
+                'purchaseTime': purchaseTime,
+              },
+            },
           };
         }
 
@@ -411,6 +422,7 @@ class _DetailPageState extends State<DetailPage> {
                 ),
                 child: Row(
                   children: [
+                    // image
                     Padding(
                       padding: EdgeInsets.all(2),
                       child: Column(
@@ -433,7 +445,7 @@ class _DetailPageState extends State<DetailPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(''),
+                            // Title
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -447,13 +459,13 @@ class _DetailPageState extends State<DetailPage> {
                                   child: Text(
                                     widget.title,
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                            Text(''),
+                            // Author
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -467,12 +479,42 @@ class _DetailPageState extends State<DetailPage> {
                                   child: Text(
                                     widget.author,
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
+                            // Description
+                            Text(
+                              'Description: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Container(
+                              width: 300,
+                              height: 200,
+                              // color: Colors.white,
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
+                                      child: Text(
+                                        widget.description,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
                             Row(
                               children: [
                                 IconButton(
@@ -515,7 +557,7 @@ class _DetailPageState extends State<DetailPage> {
                                   builder: (context, snapshot) {
                                     return Text(
                                       '${snapshot.data ?? 0}',
-                                      style: TextStyle(fontSize: 16),
+                                      style: TextStyle(fontSize: 14),
                                     );
                                   },
                                 ),
@@ -543,7 +585,8 @@ class _DetailPageState extends State<DetailPage> {
                   children: episodes.asMap().entries.map((entry) {
                     int episodeNumber =
                         int.tryParse(episodes[entry.key].split(' ')[1]) ?? 0;
-                    bool isLocked = episodeNumber >= 4;
+                    // สั่ง lock Ep
+                    bool isLocked = episodeNumber >= 2;
 
                     return Card(
                       clipBehavior: Clip.antiAliasWithSaveLayer,
@@ -613,6 +656,7 @@ class _DetailPageState extends State<DetailPage> {
                                                 widget.id,
                                                 widget.title,
                                                 episode_id,
+                                                DateTime.now(),
                                               );
 
                                               Navigator.of(context).pop();
@@ -745,7 +789,7 @@ class _DetailPageState extends State<DetailPage> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(height: 10),
+                                SizedBox(height: 9),
                                 Row(
                                   children: [
                                     Icon(Icons.favorite, color: Colors.white),
@@ -773,42 +817,41 @@ class _DetailPageState extends State<DetailPage> {
                             ),
                             Spacer(),
                             if (isLocked)
-                              FutureBuilder<bool>(
-                                  future: isEpisodePurchased(_user?.uid ?? '',
-                                      widget.id, episodeIds[entry.key]),
+                              StreamBuilder<bool>(
+                                  stream: Stream.fromFuture(isEpisodePurchased(
+                                      _user?.uid ?? '',
+                                      widget.id,
+                                      episodeIds[entry.key])),
                                   builder: (context, snapshot) {
                                     if (snapshot.connectionState ==
                                         ConnectionState.waiting) {
-                                      // หากยังไม่ได้รับข้อมูล
-                                      return SizedBox(); // ส่งกลับวิดเจ็ตว่างเพื่อไม่ให้แสดงอะไร
+                                      // สถานะการโหลด
+                                      return CircularProgressIndicator();
                                     } else if (snapshot.hasError) {
-                                      // หากเกิดข้อผิดพลาดในการเรียกข้อมูล
-                                      return SizedBox(); // ส่งกลับวิดเจ็ตว่างเพื่อไม่ให้แสดงอะไร
+                                      // สถานะข้อผิดพลาด
+                                      return Text('Error: ${snapshot.error}');
                                     } else {
-                                      // ถ้าไม่มีข้อผิดพลาด
-                                      bool isPurchased = snapshot.data ??
-                                          false; // ดึงค่า isPurchased จาก snapshot
+                                      // ข้อมูลที่ได้รับ
+                                      bool isPurchased = snapshot.data ?? false;
                                       if (!isPurchased) {
-                                        // ถ้าตอนนั้นยังไม่ได้ซื้อ
+                                        // ไม่ได้ซื้อ
                                         return Column(
                                           children: [
                                             Text('15',
-                                                style: TextStyle(
-                                                    fontSize: 16)), // แสดงราคา
+                                                style: TextStyle(fontSize: 16)),
                                             Padding(
                                               padding: const EdgeInsets.only(
                                                   right: 10),
                                               child: Icon(
                                                   Icons
                                                       .monetization_on_outlined,
-                                                  color: Colors
-                                                      .black), // แสดงไอคอนเหรียญ
+                                                  color: Colors.black),
                                             ),
                                           ],
                                         );
                                       } else {
-                                        // ถ้าตอนนั้นซื้อแล้ว
-                                        return SizedBox(); // ส่งกลับวิดเจ็ตว่างเพื่อไม่ให้แสดงอะไร
+                                        // ซื้อแล้ว
+                                        return SizedBox();
                                       }
                                     }
                                   })

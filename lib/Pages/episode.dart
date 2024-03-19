@@ -410,48 +410,48 @@ class _EpisodePageState extends State<EpisodePage> {
                       ),
                     ),
                   ),
-                  Column(
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Score',
-                              style: TextStyle(
-                                fontFamily: 'Readex Pro',
-                                color: Colors.white,
-                                fontSize: 20,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          RatingBar.builder(
-                            onRatingUpdate: (newValue) =>
-                                setState(() => _ratingBarValue = newValue),
-                            itemBuilder: (context, index) => Icon(
-                              Icons.star_rounded,
-                              color: Color.fromARGB(255, 224, 231, 125),
-                            ),
-                            direction: Axis.horizontal,
-                            initialRating: _ratingBarValue ?? 2,
-                            unratedColor: Color(0x4D151313),
-                            itemCount: 5,
-                            itemSize: 40,
-                            glowColor: Colors.white,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  // Column(
+                  //   mainAxisSize: MainAxisSize.max,
+                  //   children: [
+                  //     Padding(
+                  //       padding: EdgeInsets.fromLTRB(10, 10, 10, 0),
+                  //       child: Row(
+                  //         mainAxisSize: MainAxisSize.max,
+                  //         mainAxisAlignment: MainAxisAlignment.center,
+                  //         children: [
+                  //           Text(
+                  //             'Score',
+                  //             style: TextStyle(
+                  //               fontFamily: 'Readex Pro',
+                  //               color: Colors.white,
+                  //               fontSize: 20,
+                  //             ),
+                  //           ),
+                  //         ],
+                  //       ),
+                  //     ),
+                      // Row(
+                      //   mainAxisSize: MainAxisSize.max,
+                      //   mainAxisAlignment: MainAxisAlignment.center,
+                      //   children: [
+                      //     RatingBar.builder(
+                      //       onRatingUpdate: (newValue) =>
+                      //           setState(() => _ratingBarValue = newValue),
+                      //       itemBuilder: (context, index) => Icon(
+                      //         Icons.star_rounded,
+                      //         color: Color.fromARGB(255, 224, 231, 125),
+                      //       ),
+                      //       direction: Axis.horizontal,
+                      //       initialRating: _ratingBarValue ?? 2,
+                      //       unratedColor: Color(0x4D151313),
+                      //       itemCount: 5,
+                      //       itemSize: 40,
+                      //       glowColor: Colors.white,
+                      //     ),
+                      //   ],
+                      // ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cartoonmobile/Pages/detailpage.dart';
@@ -12,6 +11,7 @@ class MyTablePage extends StatefulWidget {
 
 class _MyTablePageState extends State<MyTablePage> {
   String activeButton = 'จ'; // กำหนดค่าเริ่มต้นให้ activeButton เป็น 'จ'
+//  กำหนดวัน
   Map<String, String> dayMap = {
     'จ': 'monday',
     'อ': 'tuesday',
@@ -32,6 +32,7 @@ class _MyTablePageState extends State<MyTablePage> {
     fetchStoryData('จ'); // เรียกใช้งาน fetchStoryData เมื่อเริ่มต้น
   }
 
+// ดึงข้อมูลเรื่องราว
   Future<void> fetchStoryData(String day) async {
     try {
       final QuerySnapshot querySnapshot = await firestore
@@ -44,6 +45,7 @@ class _MyTablePageState extends State<MyTablePage> {
           storyData.clear(); // ล้างข้อมูล storyData ที่มีอยู่
         });
 
+          // ดึงรายการเรื่อง
         querySnapshot.docs.forEach((doc) {
           storyData.add({
             'id': doc['id'],
@@ -105,7 +107,7 @@ class _MyTablePageState extends State<MyTablePage> {
                         spacing: 2,
                         runSpacing: 2,
                         children: storyData.map((data) {
-                          return GestureDetector(
+                          return GestureDetector( //ส่วนที่ดึงเรื่องราว
                             onTap: () {
                               print('ID: ${data['id']}');
                               print('Author: ${data['author']}');
@@ -122,7 +124,6 @@ class _MyTablePageState extends State<MyTablePage> {
                                     imageUrl: data['imageUrl'],
                                     description: data['description'],
                                     recommendation: '',
-                                    
                                   ),
                                 ),
                               );

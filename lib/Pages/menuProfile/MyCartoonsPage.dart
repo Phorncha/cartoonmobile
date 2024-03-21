@@ -21,13 +21,13 @@ class _MyCartoonsPageState extends State<MyCartoonsPage> {
     _user = FirebaseAuth.instance.currentUser;
     _purchasedEpisodesData = [];
 
-    // Check if the user is logged in
+    // ตรวจสอบว่าผู้ใช้เข้าสู่ระบบหรือไม่
     if (_user != null) {
       _fetchPurchasedEpisodes();
     }
   }
 
-  // Fetch purchased episodes data from Firestore
+  // ดึงข้อมูลตอนที่ซื้อจาก Firestore
   void _fetchPurchasedEpisodes() async {
     try {
       DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
@@ -49,7 +49,7 @@ class _MyCartoonsPageState extends State<MyCartoonsPage> {
         for (var entry in purchasedEpisodes.entries) {
           String episodeId = entry.key;
 
-          // Fetch data related to 'storys' collection using episodeId
+          // ดึงข้อมูลที่เกี่ยวข้องกับคอลเลกชัน 'เรื่องราว' โดยใช้ EpisodeId
           DocumentSnapshot storySnapshot = await FirebaseFirestore.instance
               .collection('storys')
               .doc(episodeId)
@@ -104,7 +104,7 @@ class _MyCartoonsPageState extends State<MyCartoonsPage> {
 
                     return GestureDetector(
                       onTap: () {
-                        // Navigate to the DetailCartoonPage when tapped
+                        // ไปที่ Detail CartoonPage เมื่อแตะ
                         Navigator.push(
                           context,
                           MaterialPageRoute(

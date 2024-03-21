@@ -279,8 +279,8 @@ class _DetailPageState extends State<DetailPage> {
         int totalCoins = incomeQuery.docs.isNotEmpty
             ? incomeQuery.docs.first['coin'] + 15
             : 15;
-      // รับเวลาปัจจุบัน
-      DateTime now = DateTime.now();
+        // รับเวลาปัจจุบัน
+        DateTime now = DateTime.now();
 
         // บันทึกหรืออัปเดตข้อมูลในคอลเล็กชัน "Income"
         if (incomeQuery.docs.isNotEmpty) {
@@ -421,7 +421,7 @@ class _DetailPageState extends State<DetailPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
-                  children: [ 
+                  children: [
                     // image
                     Padding(
                       padding: EdgeInsets.all(2),
@@ -465,7 +465,7 @@ class _DetailPageState extends State<DetailPage> {
                                 ),
                               ],
                             ),
-                          // Author
+                            // Author
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -486,14 +486,16 @@ class _DetailPageState extends State<DetailPage> {
                               ],
                             ),
                             // Description
-                            Text('Description: ',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),),
+                            Text(
+                              'Description: ',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             Container(
                               width: 300,
                               height: 200,
-                              // color: Colors.white,  
+                              // color: Colors.white,
                               child: SingleChildScrollView(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -512,7 +514,6 @@ class _DetailPageState extends State<DetailPage> {
                                 ),
                               ),
                             ),
-
 
                             Row(
                               children: [
@@ -584,8 +585,8 @@ class _DetailPageState extends State<DetailPage> {
                   children: episodes.asMap().entries.map((entry) {
                     int episodeNumber =
                         int.tryParse(episodes[entry.key].split(' ')[1]) ?? 0;
-                        // สั่ง lock Ep
-                    bool isLocked = episodeNumber >= 2 ;
+                    // สั่ง lock Ep
+                    bool isLocked = episodeNumber >= 2;
 
                     return Card(
                       clipBehavior: Clip.antiAliasWithSaveLayer,
@@ -793,19 +794,15 @@ class _DetailPageState extends State<DetailPage> {
                                   children: [
                                     Icon(Icons.favorite, color: Colors.white),
                                     StreamBuilder<int>(
-                                      stream:
-                                          fetchRatingEP(episodeIds[entry.key]),
+                                      stream:fetchRatingEP(episodeIds[entry.key]),
                                       builder: (context, snapshot) {
-                                        if (snapshot.connectionState ==
-                                            ConnectionState.waiting) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
                                           return CircularProgressIndicator();
                                         } else if (snapshot.hasError) {
-                                          return Text(
-                                              'เกิดข้อผิดพลาด: ${snapshot.error}');
+                                          return Text('เกิดข้อผิดพลาด: ${snapshot.error}');
                                         } else {
                                           final rating = snapshot.data;
-                                          final displayRating =
-                                              (rating != null) ? rating : 0;
+                                          final displayRating = (rating != null) ? rating : 0;
                                           return Text('$displayRating');
                                         }
                                       },

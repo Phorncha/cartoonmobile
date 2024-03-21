@@ -51,6 +51,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // ดึงเรตติ้งEP
   Future<int> fetchRatingEP(String storyId) async {
     try {
       final storyRef =
@@ -68,6 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+// ดึงคะแนน
   Future<void> fetchScores() async {
     try {
       final usersRef = FirebaseFirestore.instance.collection("users");
@@ -148,6 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       String category = classifyMovie(probA, probC, probF, probH, probR);
       setState(() {
+        // ตัวแปรที่ใช้ใน แนะนำ
         movieCategory = category;
       });
       print('ผลการทำ DecisionTree: $movieCategory');
@@ -281,7 +284,7 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-           children: [
+            children: [
               Text(
                 'แนะนำ',
                 style: TextStyle(
@@ -296,7 +299,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance
                   .collection('storys')
-                  .where('categories', arrayContains: movieCategory)
+                  .where('categories', arrayContains: movieCategory) //ดึงTree
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -402,7 +405,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('storys')
-                  .where('categories', arrayContains: 'action')
+                  .where('categories', arrayContains: 'action') // ดึงaction
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -563,7 +566,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: FirebaseFirestore.instance
                   .collection('storys')
-                  .where('categories', arrayContains: 'fantasy')
+                  .where('categories', arrayContains: 'fantasy') // fantasy
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {

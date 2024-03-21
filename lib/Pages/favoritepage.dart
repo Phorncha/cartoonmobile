@@ -11,6 +11,7 @@ class MyFavoritePage extends StatefulWidget {
 }
 
 class _MyFavoritePageState extends State<MyFavoritePage> {
+  // tab ด้านบน
   final List<Tab> myTabs = <Tab>[
     Tab(text: 'all '),
     Tab(text: 'action'),
@@ -36,6 +37,7 @@ class _MyFavoritePageState extends State<MyFavoritePage> {
   @override
   Widget build(BuildContext context) {
     if (uid.isEmpty) {
+      // เช็คการเข้าสู่ระบบ
       return Center(
         child: Text('ท่านยังไม่มีการเข้าสู่ระบบ'),
       );
@@ -61,6 +63,7 @@ class _MyFavoritePageState extends State<MyFavoritePage> {
   }
 
   Widget buildGridView(String category, String uid) {
+    // ดึงรายการถูกใจ
     return FutureBuilder<DocumentSnapshot>(
       future: firestore.collection('users').doc(uid).get(),
       builder: (context, userSnapshot) {
@@ -79,6 +82,7 @@ class _MyFavoritePageState extends State<MyFavoritePage> {
         List<dynamic> favoriteIds = userSnapshot.data!['favorite'] ?? [];
 
         return FutureBuilder<QuerySnapshot>(
+          // ดึง favoriteIds
           future: firestore
               .collection('storys')
               .where('id', whereIn: favoriteIds.isNotEmpty ? favoriteIds : [''])
